@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { FirebaseModule } from './firebase/firebase.module';
 import { AuthModule } from './auth/auth.module';
@@ -14,6 +15,12 @@ import { BudgetModule } from './budget/budget.module';
 import { ReportsModule } from './reports/reports.module';
 import { GoalsModule } from './goals/goals.module';
 import { RecurringTransactionsModule } from './recurring-transactions/recurring-transactions.module';
+import { ReceiptsModule } from './receipts/receipts.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { SettingsModule } from './settings/settings.module';
+import { StorageModule } from './storage/storage.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
   imports: [
@@ -34,6 +41,13 @@ import { RecurringTransactionsModule } from './recurring-transactions/recurring-
     ReportsModule,
     GoalsModule,
     RecurringTransactionsModule,
+    ReceiptsModule,
+    NotificationsModule,
+    SettingsModule,
+    StorageModule,
+    ScheduleModule.forRoot(),
+    OrganizationsModule,
+    WorkspacesModule,
   ],
 })
 export class AppModule {}

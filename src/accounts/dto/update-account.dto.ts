@@ -1,7 +1,6 @@
 import {
   IsBoolean,
   IsEnum,
-  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -9,28 +8,26 @@ import {
 
 import { AccountType } from '../enums/account-type.enum';
 
-export class CreateAccountDto {
+export class UpdateAccountDto {
   @IsString()
-  @IsNotEmpty()
-  name: string;
+  @IsOptional()
+  name?: string;
 
   @IsString()
   @IsOptional()
   description?: string;
 
   @IsEnum(AccountType)
-  type: AccountType;
+  @IsOptional()
+  type?: AccountType;
 
   @IsString()
-  @IsNotEmpty()
-  currency: string;
+  @IsOptional()
+  currency?: string;
 
   @IsNumber()
-  openingBalance: number;
-
-  @IsString()
-  @IsNotEmpty()
-  workspaceId: string;
+  @IsOptional()
+  openingBalance?: number;
 
   @IsBoolean()
   @IsOptional()

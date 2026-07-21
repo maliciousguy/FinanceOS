@@ -9,96 +9,71 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 
 import { FirebaseAuthGuard } from '../auth/firebase-auth/firebase-auth.guard';
 import { AccountsService } from './accounts.service';
 import { CreateAccountDto } from './dto/create-account.dto';
-
+import { UpdateAccountDto } from './dto/update-account.dto';
 
 @Controller('accounts')
+@UseGuards(FirebaseAuthGuard)
 export class AccountsController {
-
   constructor(
     private readonly accountsService: AccountsService,
   ) {}
 
-
-  @UseGuards(FirebaseAuthGuard)
   @Post()
-  createAccount(
-    @Req() req: any,
+  create(
+    @Req() request: Request & { user: any },
     @Body() createAccountDto: CreateAccountDto,
   ) {
-
-    return this.accountsService.createAccount(
-      req.user.uid,
+    return this.accountsService.create(
+      request.user.uid,
       createAccountDto,
     );
-
   }
 
-
-
-  @UseGuards(FirebaseAuthGuard)
   @Get()
-  getAccounts(
-    @Req() req: any,
-  ) {
-
-    return this.accountsService.getAccounts(
-      req.user.uid,
-    );
-
+  findAll() {
+    return this.accountsService.findAll();
   }
 
+  @Get('workspace/:workspaceId')
+  findByWorkspace(
+    @Param('workspaceId') workspaceId: string,
+  ) {
+    return this.accountsService.findByWorkspace(
+      workspaceId,
+    );
+  }
 
-
-  @UseGuards(FirebaseAuthGuard)
   @Get(':id')
-  getAccountById(
-    @Req() req: any,
-    @Param('id') accountId: string,
-  ) {
-
-    return this.accountsService.getAccountById(
-      req.user.uid,
-      accountId,
-    );
-
+  findOne(@Param('id') id: string) {
+    return this.accountsService.findOne(id);
   }
 
-
-
-  @UseGuards(FirebaseAuthGuard)
   @Patch(':id')
-  updateAccount(
-    @Req() req: any,
-    @Param('id') accountId: string,
-    @Body() data: any,
+  update(
+    @Param('id') id: string,
+    @Req() request: Request & { user: any },
+    @Body() updateAccountDto: UpdateAccountDto,
   ) {
-
-    return this.accountsService.updateAccount(
-      req.user.uid,
-      accountId,
-      data,
+    return this.accountsService.update(
+      id,
+      request.user.uid,
+      updateAccountDto,
     );
-
   }
 
-
-
-  @UseGuards(FirebaseAuthGuard)
   @Delete(':id')
-  deleteAccount(
-    @Req() req: any,
-    @Param('id') accountId: string,
+  remove(
+    @Param('id') id: string,
+    @Req() request: Request & { user: any },
   ) {
-
-    return this.accountsService.deleteAccount(
-      req.user.uid,
-      accountId,
+    return this.accountsService.delete(
+      id,
+      request.user.uid,
     );
-
   }
-
 }

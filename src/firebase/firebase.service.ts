@@ -1,41 +1,65 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { ConfigService } from '@nestjs/config';
 
-const serviceAccount = require('../../firebase-service-account.json');
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 
 @Injectable()
 export class FirebaseService implements OnModuleInit {
+  private firestoreDb: Firestore;
+
+  constructor(
+    private readonly configService: ConfigService,
+  ) {}
+
   onModuleInit() {
-    if (!getApps().length) {
+    if (getApps().length === 0) {
       initializeApp({
-        credential: cert(serviceAccount),
+        credential: cert({
+          projectId: this.configService.get<string>('FIREBASE_PROJECT_ID'),
+          clientEmail: this.configService.get<string>('FIREBASE_CLIENT_EMAIL'),
+          privateKey: this.configService
+            .get<string>('FIREBASE_PRIVATE_KEY')
+            ?.replace(/\\n/g, '\n'),
+        }),
       });
 
       console.log('Firebase Admin initialized');
     }
+
+    this.firestoreDb = getFirestore();
   }
 
-  createUser(email: string, password: string) {
+  get firestore(): Firestore {
+    return this.firestoreDb;
+  }
+
+  async verifyToken(token: string) {
+    return getAuth().verifyIdToken(token);
+  }
+
+  async createUser(email: string, password: string) {
     return getAuth().createUser({
       email,
       password,
     });
   }
 
-  async saveUserProfile(uid: string, email: string) {
-    await getFirestore()
-      .collection('users')
-      .doc(uid)
-      .set({
-        email,
-        createdAt: new Date(),
-        role: 'user',
-      });
+  async getUserByEmail(email: string) {
+    return getAuth().getUserByEmail(email);
   }
 
-  async verifyToken(idToken: string) {
-    return getAuth().verifyIdToken(idToken);
+  async getUserByUid(uid: string) {
+    return getAuth().getUser(uid);
+  }
+
+  async saveUserProfile(uid: string, data: any) {
+    await this.firestoreDb.collection('users').doc(uid).set({
+      ...data,
+      createdAt: new Date(),
+    });
+
+    return true;
   }
 }

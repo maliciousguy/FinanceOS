@@ -1,220 +1,211 @@
-import { Injectable } from '@nestjs/common';
-import { getFirestore } from 'firebase-admin/firestore';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
+import { FirebaseService } from '../firebase/firebase.service';
+import { CreateAccountDto } from './dto/create-account.dto';
+import { UpdateAccountDto } from './dto/update-account.dto';
 
 @Injectable()
 export class AccountsService {
+  constructor(
+    private readonly firebaseService: FirebaseService,
+  ) {}
 
-
-  async createAccount(
-    uid: string,
-    data: any,
+  async create(
+    ownerId: string,
+    createAccountDto: CreateAccountDto,
   ) {
-
-    const db = getFirestore();
-
-
-    const docRef = await db
-      .collection('users')
-      .doc(uid)
-      .collection('accounts')
-      .add({
-
-        ...data,
-
-        createdAt: new Date(),
-
-      });
-
-
-
-    return {
-
-      message: 'Account created successfully',
-
-      accountId: docRef.id,
-
-    };
-
-  }
-
-
-
-
-
-  async getAccounts(
-    uid: string,
-  ) {
-
-    const db = getFirestore();
-
-
-    const snapshot = await db
-      .collection('users')
-      .doc(uid)
-      .collection('accounts')
+    const workspaceDoc = await this.firebaseService.firestore
+      .collection('workspaces')
+      .doc(createAccountDto.workspaceId)
       .get();
 
+    if (!workspaceDoc.exists) {
+      throw new NotFoundException('Workspace not found');
+    }
 
+    const workspace = workspaceDoc.data();
+
+    if (workspace?.ownerId !== ownerId) {
+      throw new ForbiddenException(
+        'Only the workspace owner can create accounts',
+      );
+    }
+
+    const account = {
+      name: createAccountDto.name,
+      description: createAccountDto.description,
+      type: createAccountDto.type,
+      currency: createAccountDto.currency,
+      openingBalance: createAccountDto.openingBalance,
+      currentBalance: createAccountDto.openingBalance,
+      workspaceId: createAccountDto.workspaceId,
+      ownerId,
+      isActive: createAccountDto.isActive ?? true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const docRef = await this.firebaseService.firestore
+      .collection('accounts')
+      .add(account);
+
+    return {
+      id: docRef.id,
+      ...account,
+    };
+  }
+
+  async findAll() {
+    const snapshot = await this.firebaseService.firestore
+      .collection('accounts')
+      .orderBy('createdAt', 'desc')
+      .get();
 
     return snapshot.docs.map((doc) => ({
-
       id: doc.id,
-
       ...doc.data(),
-
     }));
-
   }
 
-
-
-
-
-  async getAccountById(
-    uid: string,
-    accountId: string,
-  ) {
-
-    const db = getFirestore();
-
-
-    const doc = await db
-      .collection('users')
-      .doc(uid)
+  async findOne(id: string) {
+    const doc = await this.firebaseService.firestore
       .collection('accounts')
-      .doc(accountId)
+      .doc(id)
       .get();
 
+    if (!doc.exists) {
+      throw new NotFoundException('Account not found');
+    }
 
+    return {
+      id: doc.id,
+      ...doc.data(),
+    };
+  }
+
+  async findByWorkspace(workspaceId: string) {
+    const snapshot = await this.firebaseService.firestore
+      .collection('accounts')
+      .where('workspaceId', '==', workspaceId)
+      .get();
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  }
+
+  async update(
+    id: string,
+    ownerId: string,
+    updateAccountDto: UpdateAccountDto,
+  ) {
+    const docRef = this.firebaseService.firestore
+      .collection('accounts')
+      .doc(id);
+
+    const doc = await docRef.get();
 
     if (!doc.exists) {
-
-      return {
-
-        message: 'Account not found',
-
-      };
-
+      throw new NotFoundException('Account not found');
     }
 
+    const account = doc.data();
 
+    if (account?.ownerId !== ownerId) {
+      throw new ForbiddenException(
+        'Only the account owner can update this account',
+      );
+    }
 
-    return {
-
-      id: doc.id,
-
-      ...doc.data(),
-
+    const updateData: any = {
+      ...updateAccountDto,
+      updatedAt: new Date(),
     };
 
+    if (
+      updateAccountDto.openingBalance !== undefined &&
+      updateAccountDto.openingBalance !== account?.openingBalance
+    ) {
+      const difference =
+        updateAccountDto.openingBalance -
+        account.openingBalance;
+
+      updateData.currentBalance =
+        account.currentBalance + difference;
+    }
+
+    await docRef.update(updateData);
+
+    const updated = await docRef.get();
+
+    return {
+      id: updated.id,
+      ...updated.data(),
+    };
   }
 
-
-
-
-
-  async updateAccount(
-    uid: string,
-    accountId: string,
-    data: any,
+  async delete(
+    id: string,
+    ownerId: string,
   ) {
+    const docRef = this.firebaseService.firestore
+      .collection('accounts')
+      .doc(id);
 
-    const db = getFirestore();
+    const doc = await docRef.get();
 
+    if (!doc.exists) {
+      throw new NotFoundException('Account not found');
+    }
 
-    const accountRef = db
-      .collection('users')
-      .doc(uid)
+    const account = doc.data();
+
+    if (account?.ownerId !== ownerId) {
+      throw new ForbiddenException(
+        'Only the account owner can delete this account',
+      );
+    }
+
+    await docRef.delete();
+
+    return {
+      message: 'Account deleted successfully',
+    };
+  }
+
+  async updateBalance(
+    accountId: string,
+    amount: number,
+  ) {
+    const docRef = this.firebaseService.firestore
       .collection('accounts')
       .doc(accountId);
 
+    const doc = await docRef.get();
 
-
-    const account = await accountRef.get();
-
-
-
-    if (!account.exists) {
-
-      return {
-
-        message: 'Account not found',
-
-      };
-
+    if (!doc.exists) {
+      throw new NotFoundException('Account not found');
     }
 
+    const account = doc.data();
 
+    const newBalance =
+      (account?.currentBalance ?? 0) + amount;
 
-    await accountRef.update({
-
-      ...data,
-
+    await docRef.update({
+      currentBalance: newBalance,
       updatedAt: new Date(),
-
     });
 
-
-
     return {
-
-      message: 'Account updated successfully',
-
       accountId,
-
+      previousBalance: account?.currentBalance,
+      currentBalance: newBalance,
     };
-
   }
-
-
-
-
-
-  async deleteAccount(
-    uid: string,
-    accountId: string,
-  ) {
-
-    const db = getFirestore();
-
-
-    const accountRef = db
-      .collection('users')
-      .doc(uid)
-      .collection('accounts')
-      .doc(accountId);
-
-
-
-    const account = await accountRef.get();
-
-
-
-    if (!account.exists) {
-
-      return {
-
-        message: 'Account not found',
-
-      };
-
-    }
-
-
-
-    await accountRef.delete();
-
-
-
-    return {
-
-      message: 'Account deleted successfully',
-
-      accountId,
-
-    };
-
-  }
-
 }

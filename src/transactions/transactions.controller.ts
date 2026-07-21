@@ -11,16 +11,16 @@ import {
 } from '@nestjs/common';
 
 import { FirebaseAuthGuard } from '../auth/firebase-auth/firebase-auth.guard';
-import { TransactionsService } from './transactions.service';
+
 import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { TransactionsService } from './transactions.service';
 
 @Controller('transactions')
 export class TransactionsController {
-
   constructor(
     private readonly transactionsService: TransactionsService,
   ) {}
-
 
   @UseGuards(FirebaseAuthGuard)
   @Post()
@@ -34,56 +34,43 @@ export class TransactionsController {
     );
   }
 
-
   @UseGuards(FirebaseAuthGuard)
   @Get()
-  getTransactions(
-    @Req() req: any,
-  ) {
-    return this.transactionsService.getTransactions(
-      req.user.uid,
-    );
+  findAll() {
+    return this.transactionsService.findAll();
   }
-
 
   @UseGuards(FirebaseAuthGuard)
   @Get(':id')
-  getTransactionById(
-    @Req() req: any,
-    @Param('id') transactionId: string,
+  findOne(
+    @Param('id') id: string,
   ) {
-    return this.transactionsService.getTransactionById(
-      req.user.uid,
-      transactionId,
-    );
+    return this.transactionsService.findOne(id);
   }
-
 
   @UseGuards(FirebaseAuthGuard)
   @Patch(':id')
   updateTransaction(
     @Req() req: any,
-    @Param('id') transactionId: string,
-    @Body() data: any,
+    @Param('id') id: string,
+    @Body() updateTransactionDto: UpdateTransactionDto,
   ) {
     return this.transactionsService.updateTransaction(
       req.user.uid,
-      transactionId,
-      data,
+      id,
+      updateTransactionDto,
     );
   }
-
 
   @UseGuards(FirebaseAuthGuard)
   @Delete(':id')
   deleteTransaction(
     @Req() req: any,
-    @Param('id') transactionId: string,
+    @Param('id') id: string,
   ) {
     return this.transactionsService.deleteTransaction(
       req.user.uid,
-      transactionId,
+      id,
     );
   }
-
 }

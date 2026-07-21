@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { RecurringTransactionsController } from './recurring-transactions.controller';
 import { RecurringTransactionsService } from './recurring-transactions.service';
+import { FirebaseModule } from '../firebase/firebase.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
+  imports: [FirebaseModule, AuthModule],
   controllers: [RecurringTransactionsController],
-  providers: [RecurringTransactionsService]
+  providers: [RecurringTransactionsService],
 })
 export class RecurringTransactionsModule {}

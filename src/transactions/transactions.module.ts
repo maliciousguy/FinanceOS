@@ -1,11 +1,18 @@
 import { Module } from '@nestjs/common';
+
+import { AuthModule } from '../auth/auth.module';
+import { AccountsModule } from '../accounts/accounts.module';
+import { FirebaseModule } from '../firebase/firebase.module';
+
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
-import { FirebaseModule } from '../firebase/firebase.module';
-import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [FirebaseModule, AuthModule],
+  imports: [
+    FirebaseModule,
+    AuthModule,
+    AccountsModule,
+  ],
   controllers: [TransactionsController],
   providers: [TransactionsService],
 })

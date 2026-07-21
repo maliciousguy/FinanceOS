@@ -8,7 +8,9 @@ import { FirebaseService } from '../../firebase/firebase.service';
 
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
-  constructor(private readonly firebaseService: FirebaseService) {}
+  constructor(
+    private readonly firebaseService: FirebaseService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     console.log('========== GUARD START ==========');
@@ -30,13 +32,18 @@ export class FirebaseAuthGuard implements CanActivate {
 
       console.log('Step 2: Token extracted');
       console.log('Token Length:', idToken.length);
-console.log(idToken);
+      console.log(
+        'Token Preview:',
+        `${idToken.substring(0, 20)}...`,
+      );
 
-      const decodedToken =
-        await this.firebaseService.verifyToken(idToken);
+      const decodedToken = await this.firebaseService.verifyToken(idToken);
 
       console.log('Step 3: Token verified');
-      console.log(decodedToken);
+      console.log({
+        uid: decodedToken.uid,
+        email: decodedToken.email,
+      });
 
       request.user = decodedToken;
 
